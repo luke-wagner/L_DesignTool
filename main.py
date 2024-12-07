@@ -1,7 +1,7 @@
 import pygame
 import random
 import tkinter as tk
-from tkinter import colorchooser
+from tkinter import colorchooser, filedialog
 import asyncio
 
 from lightsimul.simul import *
@@ -41,6 +41,31 @@ async def send_config():
     global grid
     await controller.drawFrame(grid)
 
+def save_grid_to_file(file_path):
+    # First get rid of "empty" rows and columns
+    # --------------------------------------------------------------------
+    # Remove empty rows (rows that only contain 'FE')
+    altered_grid = [row for row in grid if any(cell != 'FE' for cell in row)]
+    
+    # Remove empty columns (columns that only contain 'FE' in each row)
+    # Transpose the grid, filter columns, then transpose back
+    altered_grid = list(zip(*altered_grid))  # Transpose the grid
+    altered_grid = [col for col in altered_grid if any(cell != 'FE' for cell in col)]
+    altered_grid = list(zip(*altered_grid))  # Transpose back to the original orientation
+    
+    # Convert tuples back to lists
+    altered_grid = [list(row) for row in altered_grid]
+    # --------------------------------------------------------------------
+
+    # Write grid data to file
+    with open(file_path, 'w') as file:
+        # First write x/y dimensions to file
+        file.write(str(len(altered_grid)) + '\n') # x
+        file.write(str(len(altered_grid[0])) + '\n') # y
+
+        for row in altered_grid:
+            file.write(' '.join(row) + '\n')
+
 async def handle_toolbar_click(pos):
     # Check if the click was within a button's area
     if 0 <= pos[1] <= toolbar_height:  # Click is within the toolbar's height
@@ -48,6 +73,14 @@ async def handle_toolbar_click(pos):
             reset_grid()
         elif 120 <= pos[0] <= 220:  # Button 2 (e.g., another action)
             await send_config()
+        elif 230 <= pos[0] <= 330:  # Button 3 (Save File)
+            # Open file save dialog
+            root = tk.Tk()
+            root.withdraw()  # Hide the main Tkinter window
+            file_path = filedialog.asksaveasfilename(defaultextension=".lcf", filetypes=[("Lights creation file", "*.lcf"), ("All files", "*.*")])
+            root.destroy()
+            if file_path:
+                save_grid_to_file(file_path)  # You would define this function to save the grid to the file
 
 def draw_rounded_rect(screen, color, rect, radius=10):
     """Draw a rectangle with rounded corners"""
@@ -69,6 +102,7 @@ def draw_toolbar(screen, mouse_pos):
     
     button1_rect = pygame.Rect(10, 10, 100, 30)
     button2_rect = pygame.Rect(120, 10, 100, 30)
+    button3_rect = pygame.Rect(230, 10, 100, 30)
     
     if button1_rect.collidepoint(mouse_pos):
         draw_rounded_rect(screen, hover_color, button1_rect)
@@ -79,6 +113,11 @@ def draw_toolbar(screen, mouse_pos):
         draw_rounded_rect(screen, hover_color, button2_rect)
     else:
         draw_rounded_rect(screen, (0, 200, 0), button2_rect)
+
+    if button3_rect.collidepoint(mouse_pos):
+        draw_rounded_rect(screen, hover_color, button3_rect)
+    else:
+        draw_rounded_rect(screen, (0, 200, 0), button3_rect)
     
     # Add text labels on buttons, centered
     font = pygame.font.Font(None, 24)
@@ -91,6 +130,11 @@ def draw_toolbar(screen, mouse_pos):
     # Button 2 text
     text = font.render("Send Config", True, (255, 255, 255))
     text_rect = text.get_rect(center=button2_rect.center)  # Center the text
+    screen.blit(text, text_rect)
+
+    # Button 3 text
+    text = font.render("Save File", True, (255, 255, 255))
+    text_rect = text.get_rect(center=button3_rect.center)  # Center the text
     screen.blit(text, text_rect)
 
 async def main():
