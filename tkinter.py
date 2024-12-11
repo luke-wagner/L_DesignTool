@@ -14,6 +14,7 @@ controller = LightsController()
 asyncio.run(controller.connect(run_simul_on_fail=False))
 
 keyframe_data = {}
+frame_data_temp = None # This will act as the "clipboard" for when the user copies frame data to paste elsewhere
 
 # Load the circle sprite and prepare colored versions
 def load_circle_sprites(sprite_path, colors, scale_factor=0.5):
@@ -114,7 +115,7 @@ def toggle_erase_mode():
     paint_bucket_button.config(relief=tk.RAISED)  # Reset paint button
     erase_button.config(relief=tk.SUNKEN if erase_mode else tk.RAISED)
 
-def add_keyframe_data(frame_num):
+def add_keyframe_event(frame_num):
     keyframe_data[frame_num] = get_label_colors(labels)
 
 def select_keyframe_event(frame_num):
@@ -132,6 +133,20 @@ def select_keyframe_event(frame_num):
             for j, label in enumerate(row):
                 label.config(image=circle_sprites[color_grid[i][j]])
                 label.color = color_grid[i][j]
+
+def copy_frame_event():
+    global frame_data_temp
+    frame_data_temp = get_label_colors(labels)
+
+def paste_frame_event():
+    global frame_data_temp
+
+    # Set current grid to frame_data_temp
+    if frame_data_temp is not None:
+        for i, row in enumerate(labels):          # Modify the existing labels using this grid
+            for j, label in enumerate(row):
+                label.config(image=circle_sprites[frame_data_temp[i][j]])
+                label.color = frame_data_temp[i][j]
 
 # Create the main window
 root = tk.Tk()
@@ -189,8 +204,10 @@ frame.pack()
 
 # Add the timeline element
 timeline = Timeline(root)
-timeline.add_keyframe_handler.append(add_keyframe_data)
+timeline.add_keyframe_handler.append(add_keyframe_event)
 timeline.select_frame_handler.append(select_keyframe_event)
+timeline.copy_frame_handler.append(copy_frame_event)
+timeline.paste_frame_handler.append(paste_frame_event)
 
 # Store references to the Labels
 labels = [[None for _ in range(cols)] for _ in range(rows)]

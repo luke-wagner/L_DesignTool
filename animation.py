@@ -6,11 +6,13 @@ class Timeline(tk.Frame):
         super().__init__(master)
         self.pack(fill="both", expand=True)
 
-        # Event handlers
+        # Event handlers - for adding callback functions outside of this file
         self.add_keyframe_handler = [self.add_keyframe_ui] # Listing of functions to call when a new keyframe is added
                                        # Functions added to this listing must take a single argument, frame number
         self.remove_keyframe_handler = [] # Functions added to this listing must take a single argument, frame number
         self.select_frame_handler = [self.select_frame_ui]
+        self.copy_frame_handler = [] # By default, no function attached. And no arguments needed
+        self.paste_frame_handler = [] # ^^^
 
         self.canvas_height = 40  # Height for the timeline
         self.canvas_width = 800  # Default canvas width
@@ -37,6 +39,12 @@ class Timeline(tk.Frame):
 
         self.remove_keyframe_btn = tk.Button(self.button_frame, text="Remove Keyframe", command=self.remove_keyframe)
         self.remove_keyframe_btn.pack(side="left")
+
+        self.copy_frame_btn = tk.Button(self.button_frame, text="Copy Frame", command=self.copy_frame)
+        self.copy_frame_btn.pack(side="left")
+
+        self.paste_frame_btn = tk.Button(self.button_frame, text="Paste Frame", command=self.paste_frame)
+        self.paste_frame_btn.pack(side="left")
 
         self.padding_left = 20  # Initial left padding (can be changed)
         self.frame_spacing = 50  # Space between frames
@@ -72,19 +80,6 @@ class Timeline(tk.Frame):
                 self.select_frame(i)
                 break
 
-    def select_frame_ui(self, frame_num):
-        # Highlight the selected frame
-        if self.selected_frame is not None:
-            # Reset previous selection
-            self.canvas.itemconfig(self.frames[self.selected_frame], fill="gray")
-
-        self.selected_frame = frame_num
-        self.canvas.itemconfig(self.frames[frame_num], fill="red")
-
-    def select_frame(self, frame_num):
-        for func in self.select_frame_handler:
-            func(frame_num)
-
     def add_keyframe_ui(self, frame_num):
         # Add a keyframe marker to the selected frame
         if self.selected_frame is not None:
@@ -119,6 +114,27 @@ class Timeline(tk.Frame):
                     self.canvas.delete(keyframe)
                     del self.keyframes[i]
                     break
+
+    def select_frame_ui(self, frame_num):
+        # Highlight the selected frame
+        if self.selected_frame is not None:
+            # Reset previous selection
+            self.canvas.itemconfig(self.frames[self.selected_frame], fill="gray")
+
+        self.selected_frame = frame_num
+        self.canvas.itemconfig(self.frames[frame_num], fill="red")
+
+    def select_frame(self, frame_num):
+        for func in self.select_frame_handler:
+            func(frame_num)
+
+    def copy_frame(self):
+        for func in self.copy_frame_handler:
+            func()
+    
+    def paste_frame(self):
+        for func in self.paste_frame_handler:
+            func()
 
     def on_resize(self, event):
         # Adjust canvas layout when window is resized
