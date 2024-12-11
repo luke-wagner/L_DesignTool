@@ -13,6 +13,8 @@ from lightslib.LightsController import LightsController
 controller = LightsController()
 asyncio.run(controller.connect(run_simul_on_fail=False))
 
+keyframe_data = {}
+
 # Load the circle sprite and prepare colored versions
 def load_circle_sprites(sprite_path, colors, scale_factor=0.5):
     base_circle = Image.open(sprite_path).convert("RGBA")
@@ -112,8 +114,28 @@ def toggle_erase_mode():
     paint_bucket_button.config(relief=tk.RAISED)  # Reset paint button
     erase_button.config(relief=tk.SUNKEN if erase_mode else tk.RAISED)
 
+def add_keyframe_data(frame_num):
+    keyframe_data[frame_num] = get_label_colors(labels)
+
+def select_keyframe_event(frame_num):
+    last_keyframe = None
+
+    for key in sorted(keyframe_data.keys(), reverse=True):
+        if key <= frame_num:
+            last_keyframe = key
+            break
+    
+    # Set grid to last_keyframe
+    if last_keyframe is not None:
+        color_grid = keyframe_data[last_keyframe] # Grab the previously stored color grid
+        for i, row in enumerate(labels):          # Modify the existing labels using this grid
+            for j, label in enumerate(row):
+                label.config(image=circle_sprites[color_grid[i][j]])
+                label.color = color_grid[i][j]
+
 # Create the main window
 root = tk.Tk()
+
 root.title("Lights Design Tool")
 
 # Parameters for the grid
@@ -167,6 +189,8 @@ frame.pack()
 
 # Add the timeline element
 timeline = Timeline(root)
+timeline.add_keyframe_handler.append(add_keyframe_data)
+timeline.select_frame_handler.append(select_keyframe_event)
 
 # Store references to the Labels
 labels = [[None for _ in range(cols)] for _ in range(rows)]
@@ -183,6 +207,18 @@ for row in range(rows):
         label.bind("<ButtonRelease-1>", on_mouse_release)
         labels[row][col] = label
 
+def get_label_colors(labels):
+    color_grid = [[None for _ in range(len(labels))] for _ in range(len(labels[0]))]
+
+    for i, row in enumerate(labels):
+        for j, label in enumerate(row):
+            # Get the color of the label (assuming it is stored as an RGB tuple)
+            color_code = label.color  # label.color is expected to be an RGB tuple
+            if not color_code.startswith('#'):
+                color_code = root.winfo_rgb(label.color)
+            color_grid[i][j] = color_code
+
+    return color_grid
 
 def labels_to_grid(labels):
     """

@@ -6,6 +6,12 @@ class Timeline(tk.Frame):
         super().__init__(master)
         self.pack(fill="both", expand=True)
 
+        # Event handlers
+        self.add_keyframe_handler = [self.add_keyframe_ui] # Listing of functions to call when a new keyframe is added
+                                       # Functions added to this listing must take a single argument, frame number
+        self.remove_keyframe_handler = [] # Functions added to this listing must take a single argument, frame number
+        self.select_frame_handler = [self.select_frame_ui]
+
         self.canvas_height = 40  # Height for the timeline
         self.canvas_width = 800  # Default canvas width
         self.canvas_pad_x = 0
@@ -66,16 +72,20 @@ class Timeline(tk.Frame):
                 self.select_frame(i)
                 break
 
-    def select_frame(self, frame_index):
+    def select_frame_ui(self, frame_num):
         # Highlight the selected frame
         if self.selected_frame is not None:
             # Reset previous selection
             self.canvas.itemconfig(self.frames[self.selected_frame], fill="gray")
 
-        self.selected_frame = frame_index
-        self.canvas.itemconfig(self.frames[frame_index], fill="red")
+        self.selected_frame = frame_num
+        self.canvas.itemconfig(self.frames[frame_num], fill="red")
 
-    def add_keyframe(self):
+    def select_frame(self, frame_num):
+        for func in self.select_frame_handler:
+            func(frame_num)
+
+    def add_keyframe_ui(self, frame_num):
         # Add a keyframe marker to the selected frame
         if self.selected_frame is not None:
             x = self.selected_frame * self.frame_spacing + self.padding_left
@@ -93,6 +103,13 @@ class Timeline(tk.Frame):
                 fill="blue", outline="black"
             )
             self.keyframes.append((self.selected_frame, keyframe))
+
+    def add_keyframe(self):
+        # Calculate the frame number from the x-coordinate of the selected frame
+        x = self.selected_frame * self.frame_spacing + self.padding_left
+        frame_number = (x - self.padding_left) // self.frame_spacing
+        for func in self.add_keyframe_handler:
+            func(frame_number)
 
     def remove_keyframe(self):
         # Remove the keyframe at the selected frame
