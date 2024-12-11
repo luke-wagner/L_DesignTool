@@ -6,12 +6,15 @@ class Timeline(tk.Frame):
         super().__init__(master)
         self.pack(fill="both", expand=True)
 
-        self.canvas_height = 40  # Reduced height for better alignment
+        self.canvas_height = 40  # Height for the timeline
+        self.canvas_width = 800  # Default canvas width
+        self.canvas_pad_x = 0
+        self.canvas_pad_y = 5
         self.canvas = Canvas(self, height=self.canvas_height, bg="#f0f0f0", scrollregion=(0, 0, 1000, self.canvas_height))
         self.scrollbar = Scrollbar(self, orient="horizontal", command=self.canvas.xview)
         self.canvas.config(xscrollcommand=self.scrollbar.set)
 
-        self.canvas.pack(side="top", fill="both", expand=True)
+        self.canvas.pack(side="top", fill="both", expand=True, padx=self.canvas_pad_x, pady=self.canvas_pad_y)
         self.scrollbar.pack(side="bottom", fill="x")
 
         self.keyframes = []  # List to store keyframe markers
@@ -29,6 +32,10 @@ class Timeline(tk.Frame):
         self.remove_keyframe_btn = tk.Button(self.button_frame, text="Remove Keyframe", command=self.remove_keyframe)
         self.remove_keyframe_btn.pack(side="left")
 
+        self.padding_left = 20  # Initial left padding (can be changed)
+        self.frame_spacing = 50  # Space between frames
+        self.total_frames = 20  # Number of frames
+
         self.draw_frames()
 
         self.canvas.bind("<Button-1>", self.on_canvas_click)
@@ -37,10 +44,14 @@ class Timeline(tk.Frame):
         master.bind("<Configure>", self.on_resize)
 
     def draw_frames(self):
+        # Calculate total width for frames based on padding and spacing
+        total_width = self.padding_left + self.frame_spacing * (self.total_frames - 1) + 50  # Extra padding on right
+        self.canvas.config(scrollregion=(0, 0, total_width, self.canvas_height))
+
         # Draw vertical lines to represent frames
-        for i in range(20):  # Example: 20 frames
-            x = i * 50 + 50
-            frame = self.canvas.create_line(x, 10, x, self.canvas_height, fill="gray")  # Shorter lines
+        for i in range(self.total_frames):
+            x = self.padding_left + i * self.frame_spacing
+            frame = self.canvas.create_line(x, 0, x, self.canvas_height, fill="gray")  # Shorter lines
             self.frames.append(frame)
 
     def on_canvas_click(self, event):
@@ -67,14 +78,18 @@ class Timeline(tk.Frame):
     def add_keyframe(self):
         # Add a keyframe marker to the selected frame
         if self.selected_frame is not None:
-            x = self.selected_frame * 50 + 50
-            center_y = self.canvas_height // 2  # Center Y position
+            x = self.selected_frame * self.frame_spacing + self.padding_left
+            # Get the coordinates of the selected frame line
+            x1, y1, x2, y2 = self.canvas.coords(self.frames[self.selected_frame])
+            # Calculate the center of the frame line
+            center_y = (y1 + y2) // 2
 
+            # Create the keyframe polygon centered around the frame line
             keyframe = self.canvas.create_polygon(
-                x - 10, center_y + 5,  # Top left
-                x, center_y - 5,       # Top center
-                x + 10, center_y + 5,   # Top right
-                x, center_y + 15,        # Bottom center
+                x - 10, center_y,  # Top left
+                x, center_y - 10,      # Top center
+                x + 10, center_y,  # Top right
+                x, center_y + 10,       # Bottom center
                 fill="blue", outline="black"
             )
             self.keyframes.append((self.selected_frame, keyframe))
@@ -89,14 +104,12 @@ class Timeline(tk.Frame):
                     break
 
     def on_resize(self, event):
-        # Keep the canvas and timeline at the bottom
-        self.button_frame.pack(side="bottom", fill="x")
-        self.canvas.pack(side="top", fill="both", expand=True)
-        self.canvas.config(scrollregion=self.canvas.bbox("all"))
+        # Adjust canvas layout when window is resized
+        self.canvas.config(scrollregion=(0, 0, self.canvas.bbox("all")[2], self.canvas_height))
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.title("Timeline")
-    root.geometry("800x200")  # Adjusted height for better view
+    root.title("Timeline Element")
+    root.geometry("800x90")  # Adjusted height for better view
     timeline = Timeline(root)
     root.mainloop()
