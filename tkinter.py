@@ -7,6 +7,7 @@ import asyncio
 
 from designtool.filesave import *
 from designtool.colorconversion import *
+from designtool.animation import Timeline
 from lightslib.LightsController import LightsController
 
 controller = LightsController()
@@ -163,6 +164,9 @@ erase_button.pack(side=tk.LEFT, padx=5)
 # Create a frame to hold the grid
 frame = tk.Frame(root, bg="white")
 frame.pack()
+
+# Add the timeline element
+timeline = Timeline(root)
 
 # Store references to the Labels
 labels = [[None for _ in range(cols)] for _ in range(rows)]
