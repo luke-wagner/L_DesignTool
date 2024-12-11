@@ -3,6 +3,14 @@ from tkinter import colorchooser
 from PIL import Image, ImageTk, ImageOps
 import random
 import math
+import asyncio
+
+from designtool.filesave import *
+from designtool.colorconversion import *
+from lightslib.LightsController import LightsController
+
+controller = LightsController()
+asyncio.run(controller.connect(run_simul_on_fail=False))
 
 # Load the circle sprite and prepare colored versions
 def load_circle_sprites(sprite_path, colors, scale_factor=0.5):
@@ -38,8 +46,8 @@ def on_mouse_drag_erase(event):
         if isinstance(widget, tk.Label):
             distance = distance_to_circle_center(widget, event)
             if distance <= circle_radius:
-                widget.config(image=circle_sprites["white"])  # Erase the color
-                widget.color = "white"
+                widget.config(image=circle_sprites["#1a1a1a"])  # Erase the color
+                widget.color = "#1a1a1a"
 
 # Handle painting on mouse hover with proximity check
 def on_mouse_drag_paint(event):
@@ -74,12 +82,9 @@ def on_mouse_release(event):
 def clear_grid():
     for row in range(rows):
         for col in range(cols):
-            labels[row][col].config(image=circle_sprites["white"])
-            labels[row][col].color = "white"
+            labels[row][col].config(image=circle_sprites["#1a1a1a"])
+            labels[row][col].color = "#1a1a1a"
 
-# Placeholder function for sending the grid configuration
-def send_config():
-    print("Send Config: Current grid configuration sent!")  # Replace with actual functionality
 
 # Launch a color picker tool
 def choose_color():
@@ -108,13 +113,13 @@ def toggle_erase_mode():
 
 # Create the main window
 root = tk.Tk()
-root.title("Grid of Circle Sprites")
+root.title("Lights Design Tool")
 
 # Parameters for the grid
 rows, cols = 20, 20
 circle_padding = 0  # Removed padding
-colors = ["red", "green", "blue", "yellow", "purple", "orange", "white"]
-selected_color = "red"  # Default selected color
+colors = ['#1a1a1a'] # This list of colors will expand as we draw circles of different colors
+selected_color = "white"  # Default selected color
 paint_mode = False
 erase_mode = False  # Track whether erase mode is active
 mouse_down = False  # Track whether the mouse button is pressed
@@ -132,7 +137,7 @@ clear_button = tk.Button(toolbar, text="Clear Grid", command=clear_grid)
 clear_button.pack(side=tk.LEFT, padx=5)
 
 # Add "Send Config" button
-send_button = tk.Button(toolbar, text="Send Config", command=send_config)
+send_button = tk.Button(toolbar, text="Send Config")
 send_button.pack(side=tk.LEFT, padx=5)
 
 # Add colored square icon (color picker)
@@ -169,6 +174,45 @@ for row in range(rows):
         label.bind("<B1-Motion>", on_mouse_drag)
         label.bind("<ButtonRelease-1>", on_mouse_release)
         labels[row][col] = label
+
+
+def labels_to_grid(labels):
+    """
+    Convert a 2D array of labels into a grid of hexadecimal values.
+
+    Args:
+        labels (list of list of tk.Label): A 2D array of tkinter Label widgets.
+
+    Returns:
+        list of list of str: A 2D array of 2-digit hexadecimal strings.
+    """
+    # Initialize an empty grid with dimensions transposed
+    grid = [[None for _ in range(len(labels))] for _ in range(len(labels[0]))]
+
+    for i, row in enumerate(labels):
+        for j, label in enumerate(row):
+            # Get the color of the label (assuming it is stored as an RGB tuple)
+            color_code = label.color  # label.color is expected to be an RGB tuple
+            if not color_code.startswith('#'):
+                color_code = root.winfo_rgb(label.color)
+
+            # Convert the RGB color to a 2-digit hexadecimal value
+            hex_value = rgb_to_hex(color_code)
+
+            # Assign the transposed value
+            grid[j][i] = hex_value
+
+    return grid
+
+# Placeholder function for sending the grid configuration
+async def send_config():
+    print("Send Config: Current grid configuration sent!")  # Replace with actual functionality
+    await controller.drawFrame(labels_to_grid(labels))
+
+def send_button_callback():
+    asyncio.run(send_config())
+
+send_button.configure(command=send_button_callback)
 
 # Run the Tkinter main loop
 root.mainloop()
