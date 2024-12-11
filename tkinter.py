@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import colorchooser
+from tkinter import colorchooser, filedialog
 from PIL import Image, ImageTk, ImageOps
 import random
 import math
@@ -140,6 +140,10 @@ clear_button.pack(side=tk.LEFT, padx=5)
 send_button = tk.Button(toolbar, text="Send Config")
 send_button.pack(side=tk.LEFT, padx=5)
 
+# Add "Save to File" button
+save_button = tk.Button(toolbar, text="Save to File")
+save_button.pack(side=tk.LEFT, padx=5)
+
 # Add colored square icon (color picker)
 color_picker_button = tk.Button(
     toolbar, text="  ", bg=selected_color, width=3, command=choose_color
@@ -212,7 +216,13 @@ async def send_config():
 def send_button_callback():
     asyncio.run(send_config())
 
+def save_button_callback():
+    file_path = filedialog.asksaveasfilename(defaultextension=".lcf", filetypes=[("Lights creation file", "*.lcf"), ("All files", "*.*")])
+    if file_path:
+        save_grid_to_file(labels_to_grid(labels), file_path)
+
 send_button.configure(command=send_button_callback)
+save_button.configure(command=save_button_callback)
 
 # Run the Tkinter main loop
 root.mainloop()

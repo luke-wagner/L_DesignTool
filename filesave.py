@@ -1,4 +1,4 @@
-def save_grid_to_file(file_path):
+def save_grid_to_file(grid, file_path):
     # First get rid of "empty" rows and columns
     # --------------------------------------------------------------------
     # Remove empty rows (rows that only contain 'FE')
